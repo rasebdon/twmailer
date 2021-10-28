@@ -2,6 +2,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <iostream>
+#include <sstream>
 #include <string.h>
 #include <iomanip>
 #include <ctime>
@@ -60,8 +61,8 @@ namespace twMailerServer
         std::string sender = messageHandler::getNextLine(data, 8);
         std::cout << "Sender: " << sender << std::endl;
         // Parse reciever username
-        std::string reciever = messageHandler::getNextLine(data, 8);
-        std::cout << "Reciever: " << reciever << std::endl;
+        std::string receiver = messageHandler::getNextLine(data, 8);
+        std::cout << "Reciever: " << receiver << std::endl;
         // Parse subject (Max 80 chars)
         std::string subject = messageHandler::getNextLine(data, 80);
         std::cout << "Subject: " << subject << std::endl;
@@ -70,6 +71,7 @@ namespace twMailerServer
         std::cout << "Content: " << content << std::endl;
 
         // Save mail as file in inbox of reciever and sent messages from sender
+        messageHandler::saveMail(sender, receiver, subject, content);
 
         return "SENDING SUCCESSFUL!";
     }
@@ -144,26 +146,43 @@ namespace twMailerServer
         std::string content)
     {
         // Get/Create folders
-        std::string senderFolderPath(messageHandler::storagePath + "/" + sender + "/outbox");
-        std::string receiverFolderPath(messageHandler::storagePath + "/" + receiver + "/inbox");
-        mkdir((senderFolderPath).c_str(), 0777);
-        mkdir((receiverFolderPath).c_str(), 0777);
+        std::string senderFolderPath(messageHandler::storagePath + "/" + sender);
+        std::string senderOutboxFolderPath(messageHandler::storagePath + "/" + sender + "/outbox");
+        std::string receiverFolderPath(messageHandler::storagePath + "/" + receiver);
+        std::string receiverInboxFolderPath(messageHandler::storagePath + "/" + receiver + "/inbox");
+        if(mkdir((senderFolderPath).c_str(), 0777) != 0) {
+            std::cerr << senderFolderPath << " could not be created!" << std::endl;
+        }
+        if(mkdir((receiverFolderPath).c_str(), 0777) != 0) {
+            std::cerr << receiverFolderPath << " could not be created!" << std::endl;
+        }
+        if(mkdir((senderOutboxFolderPath).c_str(), 0777) != 0) {
+            std::cerr << senderOutboxFolderPath  << " could not be created!" << std::endl;
+        }
+        if(mkdir((receiverInboxFolderPath).c_str(), 0777) != 0) {
+            std::cerr << receiverInboxFolderPath << " could not be created!" << std::endl;
+        }
+
 
         // Generate file name
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
-        auto filename = std::string(std::put_time(&tm, "%Y%m%d%H%M%S")._M_fmt) + ".txt";
+        std::ostringstream oss;
+        oss << std::put_time(&tm, "%Y%m%d%m%H%M%S") << ".txt";
+        auto filename = oss.str();
 
         // File content creation
         std::string fileContent(subject + "\n" + content);
 
         // Save mail as txt to both folders
-        std::ofstream file(senderFolderPath + "/" + filename);
+        std::ofstream file(senderOutboxFolderPath + "/" + filename);
         file << fileContent;
         file.close();
 
-        file = std::ofstream((receiver + "/" + filename));
+        file = std::ofstream((receiverInboxFolderPath + "/" + filename));
         file << fileContent;
         file.close();
     }
+
+    
 }

@@ -19,7 +19,6 @@ namespace twMailerServer
         void start();
         void startListening();
         void abort();
-        void foo();
 
         server(int port, std::string mailSpoolDirectoryname);
         ~server();
