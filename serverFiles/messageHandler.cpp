@@ -8,7 +8,9 @@
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <vector>
 #include "messageHandler.h"
+#include "mail.h"
 
 namespace twMailerServer
 {
@@ -37,8 +39,7 @@ namespace twMailerServer
             return messageHandler::sendMail(msg);
         // LIST
         case 2:
-
-            break;
+            return messageHandler::listMails(msg);
         // READ
         case 3:
 
@@ -54,6 +55,55 @@ namespace twMailerServer
         }
 
         return std::string("OK");
+    }
+
+    std::string messageHandler::listMails(std::string &data)
+    {
+        // Get username
+        std::string username(messageHandler::getNextLine(data, 8));
+
+        // Find inbox
+        std::string inbox(storagePath + "/" + username + "/inbox/");
+        std::vector<mail> mails;
+        DIR *dir;
+        struct dirent *ent;
+
+        // Try to open the directory
+        if ((dir = opendir (inbox.c_str())) == NULL) {
+            return "0\n";
+        }
+
+        // Iterate through the directory
+            while ((ent = readdir (dir)) != NULL) {
+                std::string fileName(ent->d_name);
+
+                if(fileName == "." || fileName == "..")
+                    continue;
+                
+                std::cout << fileName << std::endl;
+
+                // Try to read mail
+                std::ifstream ifs(inbox + "/" + fileName);
+                std::string content;
+                content.assign(
+                    (std::istreambuf_iterator<char>(ifs)),
+                    (std::istreambuf_iterator<char>()));
+
+                mails.push_back(mail(content));
+            }
+            closedir (dir);
+
+        // Build message
+        std::string answer("");
+        answer += "" + std::to_string(mails.size()) + "\n";
+        for (size_t i = 0; i < mails.size(); i++)
+        {
+            answer += mails.at(i).getSubject() + "\n";
+        }
+
+        std::cout << answer << std::endl;
+
+        return answer;
     }
 
     std::string messageHandler::sendMail(std::string &data)
@@ -72,8 +122,14 @@ namespace twMailerServer
         std::string content = messageHandler::getContent(data);
         std::cout << "Content: " << content << std::endl;
 
+        // Check if mail data is valid
+        if(sender.size() == 0 || receiver.size() == 0 || subject.size() == 0 || content.size() == 0)
+            return "ERR\n";
+
         // Save mail as file in inbox of reciever and sent messages from sender
-        bool success = messageHandler::saveMail(sender, receiver, subject, content);
+        mail mail(sender, receiver, subject, content);
+
+        bool success = messageHandler::saveMail(mail);
 
         return success ? "OK\n" : "ERR\n";
     }
@@ -97,6 +153,7 @@ namespace twMailerServer
         return str;
     }
 
+    // Reads until double new lines are read
     std::string messageHandler::getNextLine(std::string &data)
     {
         std::string str("");
@@ -166,18 +223,13 @@ namespace twMailerServer
         return access(path.c_str(), F_OK ) == 0;
     }
 
-    bool messageHandler::saveMail(
-        std::string sender,
-        std::string receiver,
-        std::string subject,
-        std::string content)
+    bool messageHandler::saveMail(mail mail)
     {
         // Get/Create folders
-        
-        std::string senderFolderPath(messageHandler::storagePath + "/" + sender);
-        std::string receiverFolderPath(messageHandler::storagePath + "/" + receiver);
-        std::string senderOutboxFolderPath(messageHandler::storagePath + "/" + sender + "/outbox");
-        std::string receiverInboxFolderPath(messageHandler::storagePath + "/" + receiver + "/inbox");
+        std::string senderFolderPath(messageHandler::storagePath + "/" + mail.getSender());
+        std::string receiverFolderPath(messageHandler::storagePath + "/" + mail.getReceiver());
+        std::string senderOutboxFolderPath(messageHandler::storagePath + "/" + mail.getSender() + "/outbox");
+        std::string receiverInboxFolderPath(messageHandler::storagePath + "/" + mail.getReceiver() + "/inbox");
 
         if(!messageHandler::tryMakeDir(senderFolderPath)) return false;
         if(!messageHandler::tryMakeDir(receiverFolderPath)) return false;
@@ -192,7 +244,7 @@ namespace twMailerServer
         auto filename = oss.str();
 
         // File content creation
-        std::string fileContent(subject + "\n" + content);
+        std::string fileContent(mail.toString());
 
         // Save mail as txt to both folders
         if(!messageHandler::tryMakeTxt(senderOutboxFolderPath + "/" + filename, fileContent)) return false;
