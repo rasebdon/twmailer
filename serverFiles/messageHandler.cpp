@@ -1,19 +1,18 @@
 #include "messageHandler.h"
 #include <string>
+#include <sys/stat.h>
+#include <iostream>
+#include <string.h>
+#include <iomanip>
+#include <ctime>
+#include <bits/stdc++.h>
 
 namespace twMailerServer
 {
-    // void messageHandler::loadStorage(twMailerServer::storageManager* storage) {
-    //     messageHandler::_storage = storage;
-    // }
-
-    // void messageHandler::deleteStorageManager() {
-    //     delete(_storage);
-    // }
-
-    // bool messageHandler::hasStorage() {
-    //     return messageHandler::_storage != nullptr;
-    // }
+    void messageHandler::init(std::string storagePath)
+    {
+        messageHandler::storagePath = storagePath;
+    }
 
     std::string messageHandler::handleMessage(std::string msg, client &c)
     {
@@ -70,9 +69,6 @@ namespace twMailerServer
 
         // Save mail as file in inbox of reciever and sent messages from sender
 
-
-        // TODO -> SAVE MAIL
-
         return "SENDING SUCCESSFUL!";
     }
 
@@ -86,12 +82,12 @@ namespace twMailerServer
             i = getNextLine(data);
             i.push_back('\n');
 
-            if(i.at(0) == '\n')
+            if (i.at(0) == '\n')
                 break;
 
             str += i;
         } while (data.size() > 0);
-        
+
         return str;
     }
 
@@ -101,7 +97,8 @@ namespace twMailerServer
         size_t i = 0;
         do
         {
-            if(i >= data.size()) {
+            if (i >= data.size())
+            {
                 data.erase(0, i);
                 return str;
             }
@@ -109,7 +106,8 @@ namespace twMailerServer
             char c = data.at(i);
             if (c == '\n')
             {
-                if(i == 0) {
+                if (i == 0)
+                {
                     str.push_back(c);
                     return str;
                 }
@@ -125,12 +123,45 @@ namespace twMailerServer
         return str;
     }
 
-    std::string messageHandler::getNextLine(std::string &data, size_t maxChars) {
-        std::string str(getNextLine(data)); 
+    std::string messageHandler::getNextLine(std::string &data, size_t maxChars)
+    {
+        std::string str(getNextLine(data));
         while (str.size() > maxChars && str.size() > 0)
         {
             str.pop_back();
         }
         return str;
+    }
+
+    // ===== STORAGE =====
+
+    void messageHandler::saveMail(
+        std::string sender,
+        std::string receiver,
+        std::string subject,
+        std::string content)
+    {
+        // Get/Create folders
+        std::string senderFolderPath(messageHandler::storagePath + "/" + sender + "/outbox");
+        std::string receiverFolderPath(messageHandler::storagePath + "/" + receiver + "/inbox");
+        mkdir((senderFolderPath).c_str(), 0777);
+        mkdir((receiverFolderPath).c_str(), 0777);
+
+        // Generate file name
+        auto t = std::time(nullptr);
+        auto tm = *std::localtime(&t);
+        auto filename = std::string(std::put_time(&tm, "%Y%m%d%H%M%S")._M_fmt) + ".txt";
+
+        // File content creation
+        std::string fileContent(subject + "\n" + content);
+
+        // Save mail as txt to both folders
+        std::ofstream file(senderFolderPath + "/" + filename);
+        file << fileContent;
+        file.close();
+
+        file = std::ofstream((receiver + "/" + filename));
+        file << fileContent;
+        file.close();
     }
 }

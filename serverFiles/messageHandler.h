@@ -1,19 +1,19 @@
 #pragma once
 
-#include <iostream>
+#include <string>
 #include "serverClient.h"
-// #include "storageManager.h"
 
 namespace twMailerServer
 {
     class messageHandler
     {
     private:
-        // static storageManager* _storage;
+
     public:
-        // static void loadStorage(twMailerServer::storageManager* storage);
-        // static void deleteStorageManager();
-        // static bool hasStorage();
+        static std::string storagePath;
+        static void init(std::string storagePath);
+
+        static void saveMail(std::string sender, std::string receiver, std::string subject, std::string content);
 
         static std::string getSubject(std::string &data);
         static std::string getUsername(std::string &data);

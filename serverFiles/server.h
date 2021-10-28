@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include "serverClient.h"
+#include "messageHandler.h"
 
 namespace twMailerServer
 {

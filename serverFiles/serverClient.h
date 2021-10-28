@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <thread>
 
 namespace twMailerServer 
@@ -18,7 +19,7 @@ namespace twMailerServer
 
         int getId();
 
-        client(int clientId, void *data, std::string storagePath);
+        client(int clientId, void *data);
         ~client();
     };
 }

@@ -7,41 +7,7 @@
 #include <string.h>
 #include <thread>
 #include "server.h"
-
-// Program entry point
-int main(int argc, char const *argv[])
-{
-    int port;
-    std::string mailSpoolDirectoryname;
-    std::vector<std::string> args(argv, argv + argc);
-
-    // Get start arguments
-    try {
-        if(args.size() != 3) {
-            throw std::invalid_argument("Invalid number of program arguments given!");
-        }
-        // String to int
-        port = std::stoi(argv[1]);
-        mailSpoolDirectoryname = argv[2];
-    }
-    catch (...) {
-        std::cerr << "Error: Invalid program usage" << std::endl;
-        std::cout << "Mail server usage: ./twmailer-server <port> <mail-spool-directoryname>" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    // Start server
-    try {
-        twMailerServer::server server(port, mailSpoolDirectoryname);
-        server.start();
-    }
-    catch(const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    return 0;
-}
+#include "messageHandler.h"
 
 namespace twMailerServer 
 {
@@ -59,6 +25,9 @@ namespace twMailerServer
 
     void server::start() {
         std::cout << "Starting server on port: " << this->port << std::endl;
+
+        // Init message handler
+        messageHandler::init(mailSpoolDirectoryname);
 
         // Create socket
         create_socket = -1;
@@ -142,7 +111,7 @@ namespace twMailerServer
             std::cout << "Client connected from " << inet_ntoa(cliaddress.sin_addr)
                     << ":" << ntohs(cliaddress.sin_port) << "..." << std::endl;
             
-            client* c = new client(currentClientId++, &new_socket, this->mailSpoolDirectoryname);
+            client* c = new client(currentClientId++, &new_socket);
             clients.push_back(c);
             
             // Start client as new thread

@@ -1,25 +1,21 @@
-#include "serverClient.h"
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <iostream>
 #include <string.h>
 #include <unistd.h>
+#include <iomanip>
+#include <ctime>
+#include <bits/stdc++.h>
+#include "serverClient.h"
 #include "messageHandler.h"
-#include "storageManager.h"
 
 #define BUF 2048
 
 namespace twMailerServer
 {
 
-    client::client(int clientId, void *data, std::string storagePath)
+    client::client(int clientId, void *data)
     {
-        // // Init storage
-        // if (!twMailerServer::messageHandler::hasStorage())
-        // {
-        //     twMailerServer::storageManager *storage = new twMailerServer::storageManager(storagePath);
-        //     twMailerServer::messageHandler::loadStorage(storage);
-        // }
-
         this->clientId = clientId;
         socket = (int *)data;
 
@@ -29,12 +25,12 @@ namespace twMailerServer
         strcpy(buffer, msg.c_str());
         sendMessage(buffer);
     }
-
     client::~client()
     {
         abort();
     }
 
+    // ===== COMMUNICATION =====
     void client::recieve()
     {
         char buffer[BUF];
@@ -96,7 +92,6 @@ namespace twMailerServer
         // Stop client
         abort();
     }
-
     bool client::sendMessage(const char buffer[])
     {
         if (send(*socket, buffer, strlen(buffer), 0) == -1)
@@ -106,6 +101,8 @@ namespace twMailerServer
         }
         return true;
     }
+
+    // ===== MISC =====
 
     void client::abort()
     {
@@ -122,14 +119,7 @@ namespace twMailerServer
             }
             *socket = -1;
         }
-
-        // // Delete storage manager
-        // if (messageHandler::hasStorage())
-        // {
-        //     messageHandler::deleteStorageManager();
-        // }
     }
-
     int client::getId()
     {
         return this->clientId;
