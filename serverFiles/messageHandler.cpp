@@ -1,12 +1,14 @@
-#include "messageHandler.h"
-#include <string>
-#include <sys/stat.h>
+#include <bits/stdc++.h>
+#include <ctime>
+#include <dirent.h>
+#include <errno.h>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <string.h>
-#include <iomanip>
-#include <ctime>
-#include <bits/stdc++.h>
+#include <string>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "messageHandler.h"
 
 namespace twMailerServer
 {
@@ -71,9 +73,9 @@ namespace twMailerServer
         std::cout << "Content: " << content << std::endl;
 
         // Save mail as file in inbox of reciever and sent messages from sender
-        messageHandler::saveMail(sender, receiver, subject, content);
+        bool success = messageHandler::saveMail(sender, receiver, subject, content);
 
-        return "SENDING SUCCESSFUL!";
+        return success ? "OK\n" : "ERR\n";
     }
 
     // Reads the rest of the message and deletes it from the string
@@ -138,31 +140,49 @@ namespace twMailerServer
     }
 
     // ===== STORAGE =====
+    
+    bool messageHandler::tryMakeDir(std::string path) 
+    {
+        if (mkdir((path).c_str(), 0777) != 0)
+        {
+            // Check if the folder exists
+            DIR *dir = opendir(path.c_str());
+            if (!dir && ENOENT == errno)
+            {
+                std::cerr << path << " could not be created!" << std::endl;
+                return false;
+            }
+        }
+        return true;
+    }
 
-    void messageHandler::saveMail(
+    bool messageHandler::tryMakeTxt(std::string path, std::string content)
+    {
+        std::ofstream file(path);
+        file << content;
+        file.close();
+
+        // Check if file was written
+        return access(path.c_str(), F_OK ) == 0;
+    }
+
+    bool messageHandler::saveMail(
         std::string sender,
         std::string receiver,
         std::string subject,
         std::string content)
     {
         // Get/Create folders
+        
         std::string senderFolderPath(messageHandler::storagePath + "/" + sender);
-        std::string senderOutboxFolderPath(messageHandler::storagePath + "/" + sender + "/outbox");
         std::string receiverFolderPath(messageHandler::storagePath + "/" + receiver);
+        std::string senderOutboxFolderPath(messageHandler::storagePath + "/" + sender + "/outbox");
         std::string receiverInboxFolderPath(messageHandler::storagePath + "/" + receiver + "/inbox");
-        if(mkdir((senderFolderPath).c_str(), 0777) != 0) {
-            std::cerr << senderFolderPath << " could not be created!" << std::endl;
-        }
-        if(mkdir((receiverFolderPath).c_str(), 0777) != 0) {
-            std::cerr << receiverFolderPath << " could not be created!" << std::endl;
-        }
-        if(mkdir((senderOutboxFolderPath).c_str(), 0777) != 0) {
-            std::cerr << senderOutboxFolderPath  << " could not be created!" << std::endl;
-        }
-        if(mkdir((receiverInboxFolderPath).c_str(), 0777) != 0) {
-            std::cerr << receiverInboxFolderPath << " could not be created!" << std::endl;
-        }
 
+        if(!messageHandler::tryMakeDir(senderFolderPath)) return false;
+        if(!messageHandler::tryMakeDir(receiverFolderPath)) return false;
+        if(!messageHandler::tryMakeDir(senderOutboxFolderPath)) return false;
+        if(!messageHandler::tryMakeDir(receiverInboxFolderPath)) return false;
 
         // Generate file name
         auto t = std::time(nullptr);
@@ -175,14 +195,9 @@ namespace twMailerServer
         std::string fileContent(subject + "\n" + content);
 
         // Save mail as txt to both folders
-        std::ofstream file(senderOutboxFolderPath + "/" + filename);
-        file << fileContent;
-        file.close();
+        if(!messageHandler::tryMakeTxt(senderOutboxFolderPath + "/" + filename, fileContent)) return false;
+        if(!messageHandler::tryMakeTxt(receiverInboxFolderPath + "/" + filename, fileContent)) return false;
 
-        file = std::ofstream((receiverInboxFolderPath + "/" + filename));
-        file << fileContent;
-        file.close();
+        return true;
     }
-
-    
 }

@@ -8,12 +8,13 @@ namespace twMailerServer
     class messageHandler
     {
     private:
-
-    public:
         static std::string storagePath;
+        static bool saveMail(std::string sender, std::string receiver, std::string subject, std::string content);
+        static bool tryMakeDir(std::string path);
+        static bool tryMakeTxt(std::string path, std::string content);
+    public:
         static void init(std::string storagePath);
 
-        static void saveMail(std::string sender, std::string receiver, std::string subject, std::string content);
 
         static std::string getSubject(std::string &data);
         static std::string getUsername(std::string &data);
