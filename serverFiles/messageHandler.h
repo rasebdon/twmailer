@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "serverClient.h"
 #include "mail.h"
 
@@ -11,6 +12,7 @@ namespace twMailerServer
     private:
         static std::string storagePath;
 
+        static bool getMailsFromUser(std::string username, bool inbox, std::vector<mail> &mails);
         static bool saveMail(mail mail);
         static bool tryMakeDir(std::string path);
         static bool tryMakeTxt(std::string path, std::string content);
@@ -27,6 +29,7 @@ namespace twMailerServer
         // Message handling
         static std::string handleMessage(std::string msg, client &c);
         static std::string sendMail(std::string &data);
+        static std::string readMail(std::string &data);
         static std::string listMails(std::string &data);
 
     };

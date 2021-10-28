@@ -32,7 +32,7 @@ namespace twMailerServer
         getline(file, line);
         if (line != "CONTENT:")
         {
-            std::cerr << "Mail body not correct! Cancelling parsing of this mail!" << std::endl;
+            std::cerr << "Mail CONTENT not correct! Cancelling parsing of this mail!" << std::endl;
             return;
         }
 
@@ -51,7 +51,8 @@ namespace twMailerServer
         getline(file, line);
         if (line != expectedDescriptor)
         {
-            std::cerr << "Mail body not correct! Cancelling parsing of this mail!" << std::endl;
+            std::cerr << "Mail " << expectedDescriptor << " not correct! Cancelling parsing of this mail!" << std::endl;
+            std::cerr << "Read: " << line << "!" << std::endl;
             return false;
         }
         // Set sender

@@ -141,6 +141,14 @@ namespace twMailerClient
             }
             else if (command == "READ")
             {
+                // Read sender
+                std::cout << "Username (max. 8 chars (a-z, 0-9): ";
+                std::string username = getUsername();
+                std::cout << "Message number: ";
+                size_t number = 0;
+                std::cin >> number;
+
+                msg = "3\n" + username + "\n" + std::to_string(number);
             }
             else if (command == "DEL")
             {
