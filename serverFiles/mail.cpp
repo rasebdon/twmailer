@@ -14,9 +14,12 @@ namespace twMailerServer
         _receiver = receiver;
         _subject = subject;
         _content = content;
+        _path = "";
     }
-    mail::mail(std::string mailString)
+    mail::mail(std::string mailString, std::string path)
     {
+        _path = path;
+
         std::istringstream file(mailString);
 
         // Parse mail
@@ -83,6 +86,10 @@ namespace twMailerServer
     std::string mail::getContent()
     {
         return _content;
+    }
+    std::string mail::getPath()
+    {
+        return _path;
     }
 
     mail::~mail()

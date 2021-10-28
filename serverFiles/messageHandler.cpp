@@ -45,7 +45,7 @@ namespace twMailerServer
             return messageHandler::readMail(msg);
         // DEL
         case 4:
-
+            return messageHandler::deleteMail(msg);
             break;
         // QUIT
         case 5:
@@ -54,6 +54,37 @@ namespace twMailerServer
         }
 
         return std::string("FATAL_ERROR");
+    }
+
+    std::string messageHandler::deleteMail(std::string &data)
+    {
+        // Get username
+        std::string username(messageHandler::getNextLine(data, 8));
+
+        std::vector<mail> mails;
+        if(!messageHandler::getMailsFromUser(username, true, mails)) 
+        {
+            return "ERR\n";
+        }
+
+        // Get mail index
+        std::string line;
+        std::istringstream stream(data);
+        getline(stream, line);
+        size_t index = atol(line.c_str());
+
+        if(mails.size() <= index)
+        {
+            return "ERR\n";
+        }
+
+        // Delete mail file
+        if(remove(mails.at(index).getPath().c_str()) == 0) {
+            return "OK\n";
+        }
+        else {
+            return "ERR\n";
+        }
     }
 
     std::string messageHandler::readMail(std::string &data)
@@ -111,7 +142,7 @@ namespace twMailerServer
                 (std::istreambuf_iterator<char>(ifs)),
                 (std::istreambuf_iterator<char>()));
 
-            mails.push_back(mail(content));
+            mails.push_back(mail(content, path + fileName));
         }
         closedir(dir);
 

@@ -31,6 +31,7 @@ namespace twMailerServer
         static std::string sendMail(std::string &data);
         static std::string readMail(std::string &data);
         static std::string listMails(std::string &data);
+        static std::string deleteMail(std::string &data);
 
     };
 }

@@ -9,6 +9,7 @@ namespace twMailerServer
     class mail
     {
     private:
+        std::string _path;
         std::string _sender;
         std::string _receiver;
         std::string _subject;
@@ -19,15 +20,16 @@ namespace twMailerServer
         std::string toString();
 
         mail(std::string sender,
-        std::string receiver,
-        std::string subject,
-        std::string content);
-        mail(std::string mailString);
+            std::string receiver,
+            std::string subject,
+            std::string content);
+        mail(std::string mailString, std::string path);
         ~mail();
 
         std::string getSender();
         std::string getReceiver();
         std::string getSubject();
         std::string getContent();
+        std::string getPath();
     };
 }
