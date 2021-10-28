@@ -9,6 +9,8 @@
 
 namespace twMailerServer
 {
+    std::string messageHandler::storagePath;
+
     void messageHandler::init(std::string storagePath)
     {
         messageHandler::storagePath = storagePath;
