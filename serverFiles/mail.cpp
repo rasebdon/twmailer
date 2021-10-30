@@ -41,7 +41,7 @@ namespace twMailerServer
 
         while (std::getline(file, line))
         {
-            if (line + "\n" == "\n")
+            if (line.size() > 0 && line.at(0) == '.')
                 break;
 
             _content += line + "\n";

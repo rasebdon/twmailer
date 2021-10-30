@@ -163,6 +163,14 @@ namespace twMailerClient
 
                 msg = "4\n" + username + "\n" + std::to_string(number);
             }
+            else if (command == "?" || command == "HELP") {
+                std::cout << "Available commands:" << std::endl << std::endl;
+                std::cout << "SEND - Send a mail" << std::endl;
+                std::cout << "LIST - List the inbox" << std::endl;
+                std::cout << "VIEW - View a mail" << std::endl;
+                std::cout << "DEL  - Delete a mail" << std::endl;
+                std::cout << "HELP - Shows this list" << std::endl;
+            }
             else if (command == "QUIT")
             {
 
@@ -170,11 +178,12 @@ namespace twMailerClient
             }
             else
             {
+                std::cout << "Write ? or HELP to list all available commands." << std::endl;
                 continue;
             }
 
             // Send the input
-            if (msg != "")
+            if (msg.size() > 0)
             {
                 if (this->sendMessage(msg.c_str(), msg.length()) == false)
                 {
@@ -182,10 +191,10 @@ namespace twMailerClient
                     break;
                 }
                 std::cout << "Message sent!" << std::endl;
-            }
 
-            // Receive answer
-            receive();
+                // Receive answer
+                receive();
+            }
         } while (!abort);
     }
 
@@ -203,14 +212,16 @@ namespace twMailerClient
 
     std::string client::getContent()
     {
-        std::cout << "Ends reading when two line breaks are entered back to back!" << std::endl;
+        std::cout << "Ends reading when reading .\n!" << std::endl;
         std::string input("");
-        std::string i("");
+        std::string line("");
         do
         {
-            std::getline(std::cin, i);
-            input += i + "\n";
-        } while (i.size() > 0 && i.at(0) != '\n');
+            std::getline(std::cin, line);
+            input += line + "\n";
+        } while (
+            line.size() == 0 ||
+            !(line.size() == 1 && line.at(0) == '.'));
 
         return input;
     }

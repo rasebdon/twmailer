@@ -205,16 +205,17 @@ namespace twMailerServer
     std::string messageHandler::getContent(std::string &data)
     {
         std::string str("");
-        std::string i("");
+        std::string line("");
         do
         {
-            i = getNextLine(data);
-            i.push_back('\n');
+            line = getNextLine(data);
 
-            if (i.at(0) == '\n')
+            if (line.size() == 1 && line.at(0)) {
+                str += ".";
                 break;
+            }
 
-            str += i;
+           str += (line + '\n');
         } while (data.size() > 0);
 
         return str;
@@ -236,11 +237,6 @@ namespace twMailerServer
             char c = data.at(i);
             if (c == '\n')
             {
-                if (i == 0)
-                {
-                    str.push_back(c);
-                    return str;
-                }
                 break;
             }
             else
