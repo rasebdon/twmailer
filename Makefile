@@ -1,3 +1,6 @@
+# all
+all: client server
+
 # Client files
 client: clientFiles/client.cpp
 	g++ -o twmailer-client clientFiles/client.cpp

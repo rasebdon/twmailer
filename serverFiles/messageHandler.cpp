@@ -70,7 +70,7 @@ namespace twMailerServer
         // Get mail index
         std::string line;
         std::istringstream stream(data);
-        getline(stream, line);
+        stream >> line;
         size_t index = atol(line.c_str());
 
         if(mails.size() <= index)
@@ -101,9 +101,8 @@ namespace twMailerServer
         // Get mail index
         std::string line;
         std::istringstream stream(data);
-        getline(stream, line);
+        stream >> line;
         size_t index = atol(line.c_str());
-
         if(mails.size() <= index)
         {
             return "ERR\n";

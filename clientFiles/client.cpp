@@ -167,7 +167,7 @@ namespace twMailerClient
                 std::cout << "Available commands:" << std::endl << std::endl;
                 std::cout << "SEND - Send a mail" << std::endl;
                 std::cout << "LIST - List the inbox" << std::endl;
-                std::cout << "VIEW - View a mail" << std::endl;
+                std::cout << "READ - View a mail" << std::endl;
                 std::cout << "DEL  - Delete a mail" << std::endl;
                 std::cout << "HELP - Shows this list" << std::endl;
             }
