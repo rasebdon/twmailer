@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     }
     catch (...) {
         std::cerr << "Error: Invalid program usage" << std::endl;
-        std::cout << "Mail server usage: ./twmailer-server <port> <mail-spool-directoryname>" << std::endl;
+        std::cout << "Mail server usage: " << args.at(0) << " <port> <mail-spool-directoryname>" << std::endl;
         return EXIT_FAILURE;
     }
 

@@ -20,10 +20,10 @@ namespace twMailerServer
         socket = (int *)data;
 
         // Send client its id
-        std::string msg = std::to_string(clientId);
-        char buffer[BUF];
-        strcpy(buffer, msg.c_str());
-        sendMessage(buffer);
+        // std::string msg = std::to_string(clientId);
+        // char buffer[BUF];
+        // strcpy(buffer, msg.c_str());
+        // sendMessage(buffer);
     }
     client::~client()
     {

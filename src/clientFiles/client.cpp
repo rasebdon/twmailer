@@ -32,7 +32,7 @@ int main(int argc, char const *argv[])
     catch (...)
     {
         std::cerr << "Error: Invalid program usage" << std::endl;
-        std::cout << "Mail client usage: ./twmailer-client <ip> <port> " << std::endl;
+        std::cout << "Mail client usage: " << args.at(0) << " <ip> <port> " << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -87,16 +87,16 @@ namespace twMailerClient
         std::string ipString = inet_ntoa(address.sin_addr);
         std::cout << "Connecting to " << ipString << ":" << ntohs(address.sin_port) << std::endl;
 
+        // Connect to server socket
         if (connect(mySocket, (struct sockaddr *)&address, sizeof(address)) == -1)
         {
-            // https://man7.org/linux/man-pages/man3/perror.3.html
             throw std::runtime_error("Connect error - no server available");
         }
 
         std::cout << "Connection to server " << ipString << ":" << ntohs(address.sin_port) << " successful!" << std::endl;
 
-        // Receive welcome message
-        receive();
+        // Receive welcome message (deprecated - server is listening)
+        // receive();
 
         // Start input loop
         handleUserInput();
@@ -269,7 +269,7 @@ namespace twMailerClient
         {
             receiveBuffer[size] = '\0';
             // Process message
-            std::cout << "<< " << receiveBuffer << std::endl;
+            std::cout << "<< " << receiveBuffer;
         }
     }
 
