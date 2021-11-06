@@ -6,6 +6,7 @@
 #include <string.h>
 #include <iostream>
 #include <vector>
+#include "../shared/protocol.h"
 #include "client.h"
 
 #define BUF 2048
@@ -113,7 +114,8 @@ namespace twMailerClient
             std::cin >> command;
 
             std::string msg("");
-            if (command == "SEND")
+
+            if (command == COMMAND_SEND)
             {
                 // Read sender
                 std::cout << "Sender (max. 8 chars (a-z, 0-9): ";
@@ -129,29 +131,17 @@ namespace twMailerClient
                 std::string content = getContent();
 
                 // Build message
-                msg = "1\n" +  sender + receiver + subject + content;
+                msg = COMMAND_SEND + std::string("\n") +  sender + receiver + subject + content;
             }
-            else if (command == "LIST")
+            else if (command == COMMAND_LIST)
             {
                 // Read username
                 std::cout << "Username (max. 8 chars (a-z, 0-9): ";
                 std::string username = getUsername();
 
-                msg = "2\n" + username;
+                msg = COMMAND_LIST + std::string("\n") + username;
             }
-            else if (command == "READ")
-            {
-                // Read username
-                std::cout << "Username (max. 8 chars (a-z, 0-9): ";
-                std::string username = getUsername();
-                // Read mail index
-                std::cout << "Message number: ";
-                size_t number = 0;
-                std::cin >> number;
-
-                msg = "3\n" + username + "\n" + std::to_string(number);
-            }
-            else if (command == "DEL")
+            else if (command == COMMAND_READ)
             {
                 // Read username
                 std::cout << "Username (max. 8 chars (a-z, 0-9): ";
@@ -161,7 +151,19 @@ namespace twMailerClient
                 size_t number = 0;
                 std::cin >> number;
 
-                msg = "4\n" + username + "\n" + std::to_string(number);
+                msg = COMMAND_READ + std::string("\n") + username + "\n" + std::to_string(number);
+            }
+            else if (command == COMMAND_DEL)
+            {
+                // Read username
+                std::cout << "Username (max. 8 chars (a-z, 0-9): ";
+                std::string username = getUsername();
+                // Read mail index
+                std::cout << "Message number: ";
+                size_t number = 0;
+                std::cin >> number;
+
+                msg = COMMAND_DEL + std::string("\n") + username + "\n" + std::to_string(number);
             }
             else if (command == "?" || command == "HELP") {
                 std::cout << "Available commands:" << std::endl << std::endl;
@@ -171,9 +173,8 @@ namespace twMailerClient
                 std::cout << "DEL  - Delete a mail" << std::endl;
                 std::cout << "HELP - Shows this list" << std::endl;
             }
-            else if (command == "QUIT")
+            else if (command == COMMAND_QUIT)
             {
-
                 abort = true;
             }
             else

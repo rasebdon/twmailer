@@ -14,32 +14,25 @@ namespace twMailerServer
         _receiver = receiver;
         _subject = subject;
         _content = content;
-        _path = "";
     }
-    mail::mail(std::string mailString, std::string path)
-    {
+
+    mail::mail(std::istringstream &stream, std::string path) : mail(stream) {
         _path = path;
+    }
 
-        std::istringstream file(mailString);
-
+    mail::mail(std::istringstream &stream)
+    {
         // Parse mail
-        if (!getNextLine(file, "SENDER:", _sender))
+        if (!getNextLine(stream, _sender, 8))
             return;
-        if (!getNextLine(file, "RECEIVER:", _receiver))
+        if (!getNextLine(stream, _receiver, 8))
             return;
-        if (!getNextLine(file, "SUBJECT:", _subject))
+        if (!getNextLine(stream, _subject, 80))
             return;
 
         // Parse content
-        std::string line;
-        getline(file, line);
-        if (line != "CONTENT:")
-        {
-            std::cerr << "Mail CONTENT not correct! Cancelling parsing of this mail!" << std::endl;
-            return;
-        }
-
-        while (std::getline(file, line))
+        std::string line = "";
+        while (std::getline(stream, line))
         {
             if (line.size() > 0 && line.at(0) == '.')
                 break;
@@ -48,25 +41,17 @@ namespace twMailerServer
         }
     }
 
-    bool mail::getNextLine(std::istringstream &file, std::string expectedDescriptor, std::string &string)
+    bool mail::getNextLine(std::istringstream &stream, std::string &string, size_t maxLength)
     {
         std::string line;
-        getline(file, line);
-        if (line != expectedDescriptor)
-        {
-            std::cerr << "Mail " << expectedDescriptor << " not correct! Cancelling parsing of this mail!" << std::endl;
-            std::cerr << "Read: " << line << "!" << std::endl;
-            return false;
-        }
-        // Set sender
-        getline(file, line);
+        getline(stream, line);
         string = line;
         return true;
     }
 
     std::string mail::toString()
     {
-        return "SENDER:\n" + _sender + "\nRECEIVER:\n" + _receiver + "\nSUBJECT:\n" + _subject + "\nCONTENT:\n" + _content;
+        return _sender + "\n" +_receiver + "\n" + _subject + "\n" + _content;
     }
 
     // ===== GETTER =====

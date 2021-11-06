@@ -15,7 +15,7 @@ namespace twMailerServer
         std::string _subject;
         std::string _content;
 
-        bool getNextLine(std::istringstream &file, std::string expectedDescriptor, std::string &string);
+        bool getNextLine(std::istringstream &stream, std::string &string, size_t maxLength);
     public:
         std::string toString();
 
@@ -23,7 +23,8 @@ namespace twMailerServer
             std::string receiver,
             std::string subject,
             std::string content);
-        mail(std::string mailString, std::string path);
+        mail(std::istringstream &stream, std::string path);
+        mail(std::istringstream &stream);
         ~mail();
 
         std::string getSender();

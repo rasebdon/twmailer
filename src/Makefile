@@ -2,12 +2,12 @@
 all: client server
 
 # Client files
-client: clientFiles/client.cpp
-	g++ -o twmailer-client clientFiles/client.cpp
+client: protocol clientFiles/client.cpp protocol.o
+	g++ -o twmailer-client clientFiles/client.cpp protocol.o
 
 # Server files
-server: mail messageHandler serverClient main serverFiles/server.cpp mail.o messageHandler.o serverClient.o main.o
-	g++ -o twmailer-server serverFiles/server.cpp mail.o messageHandler.o serverClient.o main.o
+server: protocol mail messageHandler serverClient main serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o
+	g++ -o twmailer-server serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o
 
 main: serverFiles/main.cpp
 	g++ -c -Wall serverFiles/main.cpp
@@ -20,6 +20,10 @@ messageHandler: serverFiles/messageHandler.cpp
 
 mail: serverFiles/mail.cpp
 	g++ -c -Wall serverFiles/mail.cpp
+
+# Shared files
+protocol: shared/protocol.cpp
+	g++ -c -Wall shared/protocol.cpp
 
 # Cleans
 clean:

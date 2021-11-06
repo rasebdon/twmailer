@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
+#include "../shared/protocol.h"
 #include "messageHandler.h"
 #include "mail.h"
 
@@ -23,43 +24,43 @@ namespace twMailerServer
 
     std::string messageHandler::handleMessage(std::string msg, client &c)
     {
-        std::cout << "Client(" << c.getId() << ") - Message received: " << msg << std::endl;
-        // Get message id (first character as integer)
-        int id = atoi(&msg.at(0));
-        msg.erase(0, 2); // Remove read string and new line spacer
+        // Convert string to stream
+        std::istringstream stream(msg);
 
-        switch (id)
+        // Get message command (first line)
+        std::string cmd = "";
+        getline(stream, cmd);
+
+        std::cout << "Client(" << c.getId() << ") - " << cmd << " command received" << std::endl;
+
+        if (cmd == COMMAND_SEND)
         {
-        // 0 is parsing error (from atoi)
-        case 0:
-        default:
-            return "Invalid command!";
-        // SEND
-        case 1:
-            return messageHandler::sendMail(msg);
-        // LIST
-        case 2:
-            return messageHandler::listMails(msg);
-        // READ
-        case 3:
-            return messageHandler::readMail(msg);
-        // DEL
-        case 4:
-            return messageHandler::deleteMail(msg);
-            break;
-        // QUIT
-        case 5:
-
-            break;
+            return messageHandler::sendMail(stream);
+        }
+        else if (cmd == COMMAND_LIST)
+        {
+            return messageHandler::listMails(stream);
+        }
+        else if (cmd == COMMAND_READ)
+        {
+            return messageHandler::readMail(stream);
+        }
+        else if (cmd == COMMAND_DEL)
+        {
+            return messageHandler::deleteMail(stream);
+        }
+        else if (cmd == COMMAND_QUIT)
+        {
+            return "Client quit!";
         }
 
-        return std::string("FATAL_ERROR");
+        return std::string("Unknown message received!");
     }
 
-    std::string messageHandler::deleteMail(std::string &data)
+    std::string messageHandler::deleteMail(std::istringstream &stream)
     {
         // Get username
-        std::string username(messageHandler::getNextLine(data, 8));
+        std::string username = messageHandler::getUsername(stream);
 
         std::vector<mail> mails;
         if(!messageHandler::getMailsFromUser(username, true, mails)) 
@@ -69,7 +70,6 @@ namespace twMailerServer
 
         // Get mail index
         std::string line;
-        std::istringstream stream(data);
         stream >> line;
         size_t index = atol(line.c_str());
 
@@ -87,10 +87,10 @@ namespace twMailerServer
         }
     }
 
-    std::string messageHandler::readMail(std::string &data)
+    std::string messageHandler::readMail(std::istringstream &stream)
     {
         // Get username
-        std::string username(messageHandler::getNextLine(data, 8));
+        std::string username = messageHandler::getUsername(stream);
 
         std::vector<mail> mails;
         if(!messageHandler::getMailsFromUser(username, true, mails)) 
@@ -100,7 +100,6 @@ namespace twMailerServer
 
         // Get mail index
         std::string line;
-        std::istringstream stream(data);
         stream >> line;
         size_t index = atol(line.c_str());
         if(mails.size() <= index)
@@ -132,8 +131,6 @@ namespace twMailerServer
             if (fileName == "." || fileName == "..")
                 continue;
 
-            std::cout << fileName << std::endl;
-
             // Try to read mail
             std::ifstream ifs(path + fileName);
             std::string content;
@@ -141,17 +138,18 @@ namespace twMailerServer
                 (std::istreambuf_iterator<char>(ifs)),
                 (std::istreambuf_iterator<char>()));
 
-            mails.push_back(mail(content, path + fileName));
+            std::istringstream fileStream(content);
+            mails.push_back(mail(fileStream, path + fileName));
         }
         closedir(dir);
 
         return true;
     }
 
-    std::string messageHandler::listMails(std::string &data)
+    std::string messageHandler::listMails(std::istringstream &stream)
     {
         // Get username
-        std::string username(messageHandler::getNextLine(data, 8));
+        std::string username = messageHandler::getUsername(stream);
 
         std::vector<mail> mails;
         if(!messageHandler::getMailsFromUser(username, true, mails)) 
@@ -167,90 +165,37 @@ namespace twMailerServer
             answer += mails.at(i).getSubject() + "\n";
         }
 
-        std::cout << answer << std::endl;
-
         return answer;
     }
 
-    std::string messageHandler::sendMail(std::string &data)
+    std::string messageHandler::sendMail(std::istringstream &stream)
     {
-        std::cout << "SEND command received!" << std::endl;
-        // Parse sender username
-        std::string sender = messageHandler::getNextLine(data, 8);
-        std::cout << "Sender: " << sender << std::endl;
-        // Parse reciever username
-        std::string receiver = messageHandler::getNextLine(data, 8);
-        std::cout << "Reciever: " << receiver << std::endl;
-        // Parse subject (Max 80 chars)
-        std::string subject = messageHandler::getNextLine(data, 80);
-        std::cout << "Subject: " << subject << std::endl;
-        // Parse rest as message
-        std::string content = messageHandler::getContent(data);
-        std::cout << "Content: " << content << std::endl;
-
-        // Check if mail data is valid
-        if (sender.size() == 0 || receiver.size() == 0 || subject.size() == 0 || content.size() == 0)
+        try {
+            // Create mail from stream and return the save state
+            mail mail(stream);
+            bool success = messageHandler::saveMail(mail);
+            return success ? "OK\n" : "ERR\n";
+        }
+        catch (...) {
             return "ERR\n";
-
-        // Save mail as file in inbox of reciever and sent messages from sender
-        mail mail(sender, receiver, subject, content);
-
-        bool success = messageHandler::saveMail(mail);
-
-        return success ? "OK\n" : "ERR\n";
+        }
     }
 
-    // Reads the rest of the message and deletes it from the string
-    std::string messageHandler::getContent(std::string &data)
-    {
-        std::string str("");
-        std::string line("");
-        do
-        {
-            line = getNextLine(data);
-
-            if (line.size() == 1 && line.at(0)) {
-                str += ".";
-                break;
-            }
-
-           str += (line + '\n');
-        } while (data.size() > 0);
-
-        return str;
+    std::string messageHandler::getUsername(std::istringstream &stream) {
+        return getNextLine(stream, 8);
     }
 
     // Reads until double new lines are read
-    std::string messageHandler::getNextLine(std::string &data)
+    std::string messageHandler::getNextLine(std::istringstream &stream)
     {
-        std::string str("");
-        size_t i = 0;
-        do
-        {
-            if (i >= data.size())
-            {
-                data.erase(0, i);
-                return str;
-            }
-
-            char c = data.at(i);
-            if (c == '\n')
-            {
-                break;
-            }
-            else
-            {
-                str.push_back(c);
-                i++;
-            }
-        } while (true);
-        data.erase(0, i + 1);
-        return str;
+        std::string line("");
+        getline(stream, line);
+        return line;
     }
 
-    std::string messageHandler::getNextLine(std::string &data, size_t maxChars)
+    std::string messageHandler::getNextLine(std::istringstream &stream, size_t maxChars)
     {
-        std::string str(getNextLine(data));
+        std::string str = getNextLine(stream);
         while (str.size() > maxChars && str.size() > 0)
         {
             str.pop_back();
