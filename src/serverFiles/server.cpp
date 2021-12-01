@@ -111,7 +111,9 @@ namespace twMailerServer
             std::cout << "Client connected from " << inet_ntoa(cliaddress.sin_addr)
                     << ":" << ntohs(cliaddress.sin_port) << "..." << std::endl;
             
-            client* c = new client(currentClientId++, &new_socket);
+            std::string clientIP = inet_ntoa(cliaddress.sin_addr);
+
+            client* c = new client(currentClientId++, clientIP, &new_socket);
             clients.push_back(c);
             
             // Start client as new thread
@@ -142,5 +144,8 @@ namespace twMailerServer
         {
             delete(clients.at(i));
         }
+
+        // Delete blacklist object
+        delete(messageHandler::myBlacklist);
     }
 }

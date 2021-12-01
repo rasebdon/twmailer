@@ -14,13 +14,14 @@
 namespace twMailerServer
 {
 
-    client::client(int clientId, void *data)
+    client::client(int clientId, std::string ipAddress, void *data)
     {
-        abortRequested = false;
-        username = "";
-        loggedIn = false;
+        this->ipAddress = ipAddress;
+        this->abortRequested = false;
+        this->username = "";
+        this->loggedIn = false;
         this->clientId = clientId;
-        socket = (int *)data;
+        this->socket = (int *)data;
     }
     client::~client()
     {

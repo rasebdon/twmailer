@@ -13,15 +13,17 @@
 #include "../shared/protocol.h"
 #include "messageHandler.h"
 #include "mail.h"
-
+#include "blacklist.h"
 
 namespace twMailerServer
 {
     std::string messageHandler::storagePath;
+    blacklist *messageHandler::myBlacklist = nullptr;
 
     void messageHandler::init(std::string storagePath)
     {
         messageHandler::storagePath = storagePath;
+        messageHandler::myBlacklist = new blacklist(storagePath);
 
         // Try create storage dir
         messageHandler::tryMakeDir(storagePath);
@@ -40,7 +42,7 @@ namespace twMailerServer
 
         if (!c.loggedIn && cmd == COMMAND_LOGIN)
         {
-            return messageHandler::login(stream);
+            return messageHandler::login(stream, c);
         }
         else if (cmd == COMMAND_QUIT)
         {
@@ -52,7 +54,7 @@ namespace twMailerServer
         {
             if (cmd == COMMAND_SEND)
             {
-                return messageHandler::sendMail(stream);
+                return messageHandler::sendMail(stream, c);
             }
             else if (cmd == COMMAND_LIST)
             {
@@ -68,13 +70,20 @@ namespace twMailerServer
             }
         }
 
-        return std::string("Unknown message received!");
+        return std::string("Unknown message received!\n");
     }
 
     // =====  LDAP  =====
 
-    std::string messageHandler::login(std::istringstream &stream)
+    std::string messageHandler::login(std::istringstream &stream, client &c)
     {
+        // Check if user is blacklisted
+        if(!myBlacklist->canLogin(c.ipAddress))
+        {
+            std::cout << "Client(" << c.getId() << ") - " << c.ipAddress << " tried to login but is blacklisted!" << std::endl;
+            return "ERR\n";
+        }
+
         // Define connection parameters
         const char *ldapUri = "ldap://ldap.technikum-wien.at:389";
         const int ldapVersion = LDAP_VERSION3;
@@ -132,12 +141,17 @@ namespace twMailerServer
             &servercredp);
         if (rc != LDAP_SUCCESS)
         {
+            myBlacklist->failedAttempt(c.ipAddress);
+
             std::cerr << "LDAP bind error: " << ldap_err2string(rc) << std::endl;
             ldap_unbind_ext_s(ldapHandle, NULL, NULL);
             return "ERR\n";
         }
 
         ldap_unbind_ext_s(ldapHandle, NULL, NULL);
+
+        c.loggedIn = true;
+        c.username = username;
 
         return "OK\n";
     }
@@ -258,12 +272,12 @@ namespace twMailerServer
         return answer;
     }
 
-    std::string messageHandler::sendMail(std::istringstream &stream)
+    std::string messageHandler::sendMail(std::istringstream &stream, client &c)
     {
         try
         {
             // Create mail from stream and return the save state
-            mail mail(stream);
+            mail mail(stream, c.username);
             bool success = messageHandler::saveMail(mail);
             return success ? "OK\n" : "ERR\n";
         }

@@ -5,6 +5,7 @@
 #include <vector>
 #include "serverClient.h"
 #include "mail.h"
+#include "blacklist.h"
 
 namespace twMailerServer
 {
@@ -19,6 +20,8 @@ namespace twMailerServer
         static bool tryMakeDir(std::string path);
         static bool tryMakeTxt(std::string path, std::string content);
     public:
+        static twMailerServer::blacklist *myBlacklist;
+        
         static void init(std::string storagePath);
 
         // Data handling
@@ -30,11 +33,11 @@ namespace twMailerServer
 
         // Message handling (Commands)
         static std::string handleMessage(std::string msg, client &c);
-        static std::string sendMail(std::istringstream &stream);
+        static std::string sendMail(std::istringstream &stream, client &c);
         static std::string readMail(std::istringstream &stream);
         static std::string listMails(std::istringstream &stream);
         static std::string deleteMail(std::istringstream &stream);
-        static std::string login(std::istringstream &stream);
+        static std::string login(std::istringstream &stream, client &c);
 
     };
 }

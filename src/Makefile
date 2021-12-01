@@ -1,5 +1,5 @@
 LIBS=-lldap -llber
-
+SERVER_FILES_PATH=serverFiles
 
 # all
 all: client server
@@ -9,20 +9,23 @@ client: protocol clientFiles/client.cpp protocol.o
 	g++ -o twmailer-client clientFiles/client.cpp protocol.o
 
 # Server files
-server: protocol mail messageHandler serverClient main serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o
-	g++ -o twmailer-server serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o ${LIBS}
+server: protocol blacklist mail messageHandler serverClient main ${SERVER_FILES_PATH}/server.cpp protocol.o blacklist.o mail.o messageHandler.o serverClient.o main.o
+	g++ -o twmailer-server ${SERVER_FILES_PATH}/server.cpp protocol.o blacklist.o mail.o messageHandler.o serverClient.o main.o ${LIBS}
 
-main: serverFiles/main.cpp
-	g++ -c -Wall serverFiles/main.cpp
+main: ${SERVER_FILES_PATH}/main.cpp
+	g++ -c -Wall ${SERVER_FILES_PATH}/main.cpp
 
-serverClient: serverFiles/serverClient.cpp
-	g++ -c -Wall serverFiles/serverClient.cpp
+serverClient: ${SERVER_FILES_PATH}/serverClient.cpp
+	g++ -c -Wall ${SERVER_FILES_PATH}/serverClient.cpp
 
-messageHandler: serverFiles/messageHandler.cpp
-	g++ -c -Wall serverFiles/messageHandler.cpp
+messageHandler: ${SERVER_FILES_PATH}/messageHandler.cpp
+	g++ -c -Wall ${SERVER_FILES_PATH}/messageHandler.cpp
 
-mail: serverFiles/mail.cpp
-	g++ -c -Wall serverFiles/mail.cpp
+mail: ${SERVER_FILES_PATH}/mail.cpp
+	g++ -c -Wall ${SERVER_FILES_PATH}/mail.cpp
+
+blacklist: ${SERVER_FILES_PATH}/blacklist.cpp
+	g++ -c -Wall ${SERVER_FILES_PATH}/blacklist.cpp
 
 # Shared files
 protocol: shared/protocol.cpp

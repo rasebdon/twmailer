@@ -10,11 +10,13 @@ namespace twMailerServer
     private:
         int clientId;
         int* socket;
+
     public:
         bool loggedIn;
         bool abortRequested;
         std::string username;
         std::thread myThread;
+        std::string ipAddress;
 
         void recieve();
         bool sendMessage(const char buffer[]);
@@ -22,7 +24,7 @@ namespace twMailerServer
 
         int getId();
 
-        client(int clientId, void *data);
+        client(int clientId, std::string ipAddress, void *data);
         ~client();
     };
 }

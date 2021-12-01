@@ -122,9 +122,6 @@ namespace twMailerClient
             {
                 if (command == COMMAND_SEND)
                 {
-                    // Read sender
-                    std::cout << "Sender (max. 8 chars (a-z, 0-9): ";
-                    std::string sender = getUsername();
                     // Read reciever
                     std::cout << "Receiver (max. 8 chars (a-z, 0-9): ";
                     std::string receiver = getUsername();
@@ -136,7 +133,7 @@ namespace twMailerClient
                     std::string content = getContent();
 
                     // Build message
-                    msg = COMMAND_SEND + std::string("\n") + sender + receiver + subject + content;
+                    msg = COMMAND_SEND + std::string("\n") + receiver + subject + content;
                 }
                 else if (command == COMMAND_LIST)
                 {

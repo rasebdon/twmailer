@@ -16,15 +16,14 @@ namespace twMailerServer
         _content = content;
     }
 
-    mail::mail(std::istringstream &stream, std::string path) : mail(stream) {
+    mail::mail(std::istringstream &stream, std::string sender, std::string path) : mail(stream, sender) {
         _path = path;
     }
 
-    mail::mail(std::istringstream &stream)
+    mail::mail(std::istringstream &stream, std::string sender)
     {
+        this->_sender = sender;
         // Parse mail
-        if (!getNextLine(stream, _sender, 8))
-            return;
         if (!getNextLine(stream, _receiver, 8))
             return;
         if (!getNextLine(stream, _subject, 80))
