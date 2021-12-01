@@ -1,4 +1,4 @@
-LIBS=-lldap -llber
+LIBS=-lldap -llber -pthread
 SERVER_FILES_PATH=serverFiles
 
 # all

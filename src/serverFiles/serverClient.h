@@ -15,7 +15,6 @@ namespace twMailerServer
         bool loggedIn;
         bool abortRequested;
         std::string username;
-        std::thread myThread;
         std::string ipAddress;
 
         void recieve();

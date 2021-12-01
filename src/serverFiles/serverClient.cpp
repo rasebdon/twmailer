@@ -8,6 +8,7 @@
 #include <bits/stdc++.h>
 #include "serverClient.h"
 #include "messageHandler.h"
+#include <errno.h>
 
 #define BUF 2048
 
@@ -40,13 +41,15 @@ namespace twMailerServer
             size = recv(*socket, buffer, BUF - 1, 0);
             if (size == -1)
             {
+                fprintf(stderr, "recv: %s (%d)\n", strerror(errno), errno);
+
                 if (abortRequested)
                 {
-                    std::cerr << "Client(" << clientId << ") receive error after aborted";
+                    std::cerr << "Client(" << clientId << ") receive error after aborted" << std::endl;
                 }
                 else
                 {
-                    std::cerr << "Client(" << clientId << ") receive error";
+                    std::cerr << "Client(" << clientId << ") receive error" << std::endl;
                 }
                 break;
             }
@@ -95,6 +98,8 @@ namespace twMailerServer
     {
         if (send(*socket, buffer, strlen(buffer), 0) == -1)
         {
+            fprintf(stderr, "send: %s (%d)\n", strerror(errno), errno);
+
             std::cerr << "Send failed!" << std::endl;
             return false;
         }
@@ -119,10 +124,7 @@ namespace twMailerServer
             *socket = -1;
         }
 
-        std::cout << "Client(" << clientId << " disconnected!";
-
-        // TODO : Join thread
-        // myThread.join();
+        std::cout << "Client(" << clientId << ") disconnected!" << std::endl;
     }
 
     int client::getId()

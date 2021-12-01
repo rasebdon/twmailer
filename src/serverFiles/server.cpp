@@ -113,12 +113,13 @@ namespace twMailerServer
             
             std::string clientIP = inet_ntoa(cliaddress.sin_addr);
 
-            client* c = new client(currentClientId++, clientIP, &new_socket);
+            int* socket = new int(new_socket);
+
+            client* c = new client(currentClientId++, clientIP, socket);
             clients.push_back(c);
             
             // Start client as new thread
-            // client.myThread = std::thread(&client::recieve, *c);
-            c->recieve(); // Currently single threaded
+            std::thread(&client::recieve, *c).detach();
 
             new_socket = -1;
         }
