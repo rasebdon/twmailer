@@ -1,3 +1,6 @@
+LIBS=-lldap -llber
+
+
 # all
 all: client server
 
@@ -7,7 +10,7 @@ client: protocol clientFiles/client.cpp protocol.o
 
 # Server files
 server: protocol mail messageHandler serverClient main serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o
-	g++ -o twmailer-server serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o
+	g++ -o twmailer-server serverFiles/server.cpp protocol.o mail.o messageHandler.o serverClient.o main.o ${LIBS}
 
 main: serverFiles/main.cpp
 	g++ -c -Wall serverFiles/main.cpp

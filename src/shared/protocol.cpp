@@ -7,4 +7,5 @@ namespace twMailerProtocol
     #define COMMAND_READ "READ"
     #define COMMAND_DEL  "DEL"
     #define COMMAND_QUIT "QUIT"
+    #define COMMAND_LOGIN "LOGIN"
 }

@@ -9,9 +9,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
+#include <ldap.h> 
 #include "../shared/protocol.h"
 #include "messageHandler.h"
 #include "mail.h"
+
 
 namespace twMailerServer
 {
@@ -36,29 +38,111 @@ namespace twMailerServer
 
         std::cout << "Client(" << c.getId() << ") - " << cmd << " command received" << std::endl;
 
-        if (cmd == COMMAND_SEND)
+        if (!c.loggedIn && cmd == COMMAND_LOGIN)
         {
-            return messageHandler::sendMail(stream);
-        }
-        else if (cmd == COMMAND_LIST)
-        {
-            return messageHandler::listMails(stream);
-        }
-        else if (cmd == COMMAND_READ)
-        {
-            return messageHandler::readMail(stream);
-        }
-        else if (cmd == COMMAND_DEL)
-        {
-            return messageHandler::deleteMail(stream);
+            return messageHandler::login(stream);
         }
         else if (cmd == COMMAND_QUIT)
         {
-            return "Client quit!";
+            c.abortRequested = true;
+            return COMMAND_QUIT;
+        }
+
+        if (c.loggedIn)
+        {
+            if (cmd == COMMAND_SEND)
+            {
+                return messageHandler::sendMail(stream);
+            }
+            else if (cmd == COMMAND_LIST)
+            {
+                return messageHandler::listMails(stream);
+            }
+            else if (cmd == COMMAND_READ)
+            {
+                return messageHandler::readMail(stream);
+            }
+            else if (cmd == COMMAND_DEL)
+            {
+                return messageHandler::deleteMail(stream);
+            }
         }
 
         return std::string("Unknown message received!");
     }
+
+    // =====  LDAP  =====
+
+    std::string messageHandler::login(std::istringstream &stream)
+    {
+        // Define connection parameters
+        const char *ldapUri = "ldap://ldap.technikum-wien.at:389";
+        const int ldapVersion = LDAP_VERSION3;
+        int rc = 0;
+
+        // Get credentials
+        std::string username = getNextLine(stream);
+        std::string password = getNextLine(stream);
+
+        // Init ldap
+        LDAP *ldapHandle;
+        rc = ldap_initialize(&ldapHandle, ldapUri);
+        if (rc != LDAP_SUCCESS)
+        {
+            std::cerr << "ldap_init failed" << std::endl;
+            return "ERR\n";
+        }
+
+        // Set version options
+        rc = ldap_set_option(
+        ldapHandle,
+        LDAP_OPT_PROTOCOL_VERSION, // OPTION
+        &ldapVersion);             // IN-Value
+        if (rc != LDAP_OPT_SUCCESS)
+        {
+            std::cerr << "ldap_set_option(PROTOCOL_VERSION): " << ldap_err2string(rc) << std::endl;
+            ldap_unbind_ext_s(ldapHandle, NULL, NULL);
+            return "ERR\n";
+        }
+
+        // Start TLS Secure
+        rc = ldap_start_tls_s(
+        ldapHandle,
+        NULL,
+        NULL);
+        if (rc != LDAP_SUCCESS)
+        {
+            std::cerr << "ldap_start_tls_s(): " << ldap_err2string(rc) << std::endl;
+            ldap_unbind_ext_s(ldapHandle, NULL, NULL);
+            return "ERR\n";
+        }
+
+        // Bind credentials
+        BerValue bindCredentials;
+        bindCredentials.bv_val = (char *)password.c_str();
+        bindCredentials.bv_len = strlen(password.c_str());
+        BerValue *servercredp; // server's credentials
+        rc = ldap_sasl_bind_s(
+            ldapHandle,
+            std::string("uid=" + username + ",ou=people,dc=technikum-wien,dc=at").c_str(),
+            LDAP_SASL_SIMPLE,
+            &bindCredentials,
+            NULL,
+            NULL,
+            &servercredp);
+        if (rc != LDAP_SUCCESS)
+        {
+            std::cerr << "LDAP bind error: " << ldap_err2string(rc) << std::endl;
+            ldap_unbind_ext_s(ldapHandle, NULL, NULL);
+            return "ERR\n";
+        }
+
+        ldap_unbind_ext_s(ldapHandle, NULL, NULL);
+
+        return "OK\n";
+    }
+
+    // =====  MAIL  =====
 
     std::string messageHandler::deleteMail(std::istringstream &stream)
     {
@@ -66,7 +150,7 @@ namespace twMailerServer
         std::string username = messageHandler::getUsername(stream);
 
         std::vector<mail> mails;
-        if(!messageHandler::getMailsFromUser(username, true, mails)) 
+        if (!messageHandler::getMailsFromUser(username, true, mails))
         {
             return "ERR\n";
         }
@@ -76,16 +160,18 @@ namespace twMailerServer
         stream >> line;
         size_t index = atol(line.c_str());
 
-        if(mails.size() <= index)
+        if (mails.size() <= index)
         {
             return "ERR\n";
         }
 
         // Delete mail file
-        if(remove(mails.at(index).getPath().c_str()) == 0) {
+        if (remove(mails.at(index).getPath().c_str()) == 0)
+        {
             return "OK\n";
         }
-        else {
+        else
+        {
             return "ERR\n";
         }
     }
@@ -96,7 +182,7 @@ namespace twMailerServer
         std::string username = messageHandler::getUsername(stream);
 
         std::vector<mail> mails;
-        if(!messageHandler::getMailsFromUser(username, true, mails)) 
+        if (!messageHandler::getMailsFromUser(username, true, mails))
         {
             return "ERR\n";
         }
@@ -105,7 +191,7 @@ namespace twMailerServer
         std::string line;
         stream >> line;
         size_t index = atol(line.c_str());
-        if(mails.size() <= index)
+        if (mails.size() <= index)
         {
             return "ERR\n";
         }
@@ -114,7 +200,8 @@ namespace twMailerServer
         return "OK\n" + mails.at(index).toString();
     }
 
-    bool messageHandler::getMailsFromUser(std::string username, bool inbox, std::vector<mail> &mails) {
+    bool messageHandler::getMailsFromUser(std::string username, bool inbox, std::vector<mail> &mails)
+    {
         // Find folder
         std::string path(storagePath + "/" + username + "/" + (inbox ? "inbox" : "outbox") + "/");
         DIR *dir;
@@ -155,7 +242,7 @@ namespace twMailerServer
         std::string username = messageHandler::getUsername(stream);
 
         std::vector<mail> mails;
-        if(!messageHandler::getMailsFromUser(username, true, mails)) 
+        if (!messageHandler::getMailsFromUser(username, true, mails))
         {
             return "0\n";
         }
@@ -173,18 +260,23 @@ namespace twMailerServer
 
     std::string messageHandler::sendMail(std::istringstream &stream)
     {
-        try {
+        try
+        {
             // Create mail from stream and return the save state
             mail mail(stream);
             bool success = messageHandler::saveMail(mail);
             return success ? "OK\n" : "ERR\n";
         }
-        catch (...) {
+        catch (...)
+        {
             return "ERR\n";
         }
     }
 
-    std::string messageHandler::getUsername(std::istringstream &stream) {
+    // =====   I-O   =====
+
+    std::string messageHandler::getUsername(std::istringstream &stream)
+    {
         return getNextLine(stream, 8);
     }
 

@@ -11,6 +11,9 @@ namespace twMailerServer
         int clientId;
         int* socket;
     public:
+        bool loggedIn;
+        bool abortRequested;
+        std::string username;
         std::thread myThread;
 
         void recieve();

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <iostream>
 #include <vector>
+#include <termios.h>
 #include "../shared/protocol.h"
 #include "client.h"
 
@@ -58,6 +59,8 @@ namespace twMailerClient
         std::cout << "Setting up client..." << std::endl;
         this->port = port;
         this->receiveBuffer[BUF];
+        this->loggedIn = false;
+        this->loginAttempt = false;
 
         // Create socket
         if ((mySocket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -115,72 +118,85 @@ namespace twMailerClient
 
             std::string msg("");
 
-            if (command == COMMAND_SEND)
+            if (loggedIn)
             {
-                // Read sender
-                std::cout << "Sender (max. 8 chars (a-z, 0-9): ";
-                std::string sender = getUsername();
-                // Read reciever
-                std::cout << "Receiver (max. 8 chars (a-z, 0-9): ";
-                std::string receiver = getUsername();
-                // Read subject
-                std::cout << "Subject (max. 80 chars): ";
-                std::string subject = getSubject();
-                // Get mail content
-                std::cout << "Content: ";
-                std::string content = getContent();
+                if (command == COMMAND_SEND)
+                {
+                    // Read sender
+                    std::cout << "Sender (max. 8 chars (a-z, 0-9): ";
+                    std::string sender = getUsername();
+                    // Read reciever
+                    std::cout << "Receiver (max. 8 chars (a-z, 0-9): ";
+                    std::string receiver = getUsername();
+                    // Read subject
+                    std::cout << "Subject (max. 80 chars): ";
+                    std::string subject = getSubject();
+                    // Get mail content
+                    std::cout << "Content: ";
+                    std::string content = getContent();
 
-                // Build message
-                msg = COMMAND_SEND + std::string("\n") +  sender + receiver + subject + content;
+                    // Build message
+                    msg = COMMAND_SEND + std::string("\n") + sender + receiver + subject + content;
+                }
+                else if (command == COMMAND_LIST)
+                {
+                    // Read username
+                    std::cout << "Username (max. 8 chars (a-z, 0-9): ";
+                    std::string username = getUsername();
+
+                    msg = COMMAND_LIST + std::string("\n") + username;
+                }
+                else if (command == COMMAND_READ)
+                {
+                    // Read username
+                    std::cout << "Username (max. 8 chars (a-z, 0-9): ";
+                    std::string username = getUsername();
+                    // Read mail index
+                    std::cout << "Message number: ";
+                    size_t number = 0;
+                    std::cin >> number;
+
+                    msg = COMMAND_READ + std::string("\n") + username + "\n" + std::to_string(number);
+                }
+                else if (command == COMMAND_DEL)
+                {
+                    // Read username
+                    std::cout << "Username (max. 8 chars (a-z, 0-9): ";
+                    std::string username = getUsername();
+                    // Read mail index
+                    std::cout << "Message number: ";
+                    size_t number = 0;
+                    std::cin >> number;
+
+                    msg = COMMAND_DEL + std::string("\n") + username + "\n" + std::to_string(number);
+                }
             }
-            else if (command == COMMAND_LIST)
+
+            if (!loggedIn && command == COMMAND_LOGIN)
             {
+                loginAttempt = true;
                 // Read username
                 std::cout << "Username (max. 8 chars (a-z, 0-9): ";
                 std::string username = getUsername();
+                // Read password
+                std::string password = this->getpass("Password (max. 128 chars): ", true);
 
-                msg = COMMAND_LIST + std::string("\n") + username;
+                msg = COMMAND_LOGIN + std::string("\n") + username + password;
             }
-            else if (command == COMMAND_READ)
+            else if (command == COMMAND_QUIT)
             {
-                // Read username
-                std::cout << "Username (max. 8 chars (a-z, 0-9): ";
-                std::string username = getUsername();
-                // Read mail index
-                std::cout << "Message number: ";
-                size_t number = 0;
-                std::cin >> number;
-
-                msg = COMMAND_READ + std::string("\n") + username + "\n" + std::to_string(number);
+                abort = true;
+                msg = "QUIT\n";
             }
-            else if (command == COMMAND_DEL)
+            else if (command == "?" || command == "HELP")
             {
-                // Read username
-                std::cout << "Username (max. 8 chars (a-z, 0-9): ";
-                std::string username = getUsername();
-                // Read mail index
-                std::cout << "Message number: ";
-                size_t number = 0;
-                std::cin >> number;
-
-                msg = COMMAND_DEL + std::string("\n") + username + "\n" + std::to_string(number);
-            }
-            else if (command == "?" || command == "HELP") {
-                std::cout << "Available commands:" << std::endl << std::endl;
+                std::cout << "Available commands:" << std::endl
+                          << std::endl;
                 std::cout << "SEND - Send a mail" << std::endl;
                 std::cout << "LIST - List the inbox" << std::endl;
                 std::cout << "READ - View a mail" << std::endl;
                 std::cout << "DEL  - Delete a mail" << std::endl;
                 std::cout << "HELP - Shows this list" << std::endl;
-            }
-            else if (command == COMMAND_QUIT)
-            {
-                abort = true;
-            }
-            else
-            {
-                std::cout << "Write ? or HELP to list all available commands." << std::endl;
-                continue;
             }
 
             // Send the input
@@ -195,6 +211,10 @@ namespace twMailerClient
 
                 // Receive answer
                 receive();
+            }
+            else
+            {
+                std::cout << "Write ? or HELP to list all available commands." << std::endl;
             }
         } while (!abort);
     }
@@ -270,7 +290,62 @@ namespace twMailerClient
             receiveBuffer[size] = '\0';
             // Process message
             std::cout << "<< " << receiveBuffer;
+
+            if (loginAttempt && strcmp(receiveBuffer, "OK\n") == 0)
+            {
+                std::cout << "<< LOGIN SUCCESSFUL!" << std::endl;
+                loggedIn = true;
+                loginAttempt = false;
+            }
         }
+    }
+
+    int client::getch()
+    {
+        int ch;
+        struct termios t_old, t_new;
+
+        tcgetattr(STDIN_FILENO, &t_old);
+        t_new = t_old;
+        t_new.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &t_new);
+
+        ch = getchar();
+
+        tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
+        return ch;
+    }
+
+    std::string client::getpass(const char *prompt, bool show_asterisk = true)
+    {
+        const char BACKSPACE = 127;
+        const char RETURN = 10;
+
+        std::string password;
+        unsigned char ch = 0;
+
+        std::cout << prompt << std::endl;
+
+        while ((ch = getch()) != RETURN)
+        {
+            if (ch == BACKSPACE)
+            {
+                if (password.length() != 0)
+                {
+                    if (show_asterisk)
+                        std::cout << "\b \b";
+                    password.resize(password.length() - 1);
+                }
+            }
+            else
+            {
+                password += ch;
+                if (show_asterisk)
+                    std::cout << '*';
+            }
+        }
+        std::cout << std::endl;
+        return password;
     }
 
     void client::abort()

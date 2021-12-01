@@ -1,7 +1,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <unistd.h>
 #include <iomanip>
 #include <ctime>
@@ -16,14 +16,11 @@ namespace twMailerServer
 
     client::client(int clientId, void *data)
     {
+        abortRequested = false;
+        username = "";
+        loggedIn = false;
         this->clientId = clientId;
         socket = (int *)data;
-
-        // Send client its id
-        // std::string msg = std::to_string(clientId);
-        // char buffer[BUF];
-        // strcpy(buffer, msg.c_str());
-        // sendMessage(buffer);
     }
     client::~client()
     {
@@ -35,7 +32,6 @@ namespace twMailerServer
     {
         char buffer[BUF];
         int size;
-        bool abortRequested = false;
 
         // Receive data
         do
@@ -83,11 +79,13 @@ namespace twMailerServer
                 returnMessage = "Error sending message!";
             }
 
+            if(abortRequested) break;
+
             if (sendMessage(returnMessage.c_str()) == false)
             {
                 throw std::runtime_error("Send answer failed");
             }
-        } while (strcmp(buffer, "quit") != 0 && !abortRequested);
+        } while (strcmp(buffer, "QUIT") != 0 && !abortRequested);
 
         // Stop client
         abort();
@@ -119,7 +117,13 @@ namespace twMailerServer
             }
             *socket = -1;
         }
+
+        std::cout << "Client(" << clientId << " disconnected!";
+
+        // TODO : Join thread
+        // myThread.join();
     }
+
     int client::getId()
     {
         return this->clientId;

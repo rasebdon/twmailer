@@ -34,6 +34,7 @@ namespace twMailerServer
         static std::string readMail(std::istringstream &stream);
         static std::string listMails(std::istringstream &stream);
         static std::string deleteMail(std::istringstream &stream);
+        static std::string login(std::istringstream &stream);
 
     };
 }
