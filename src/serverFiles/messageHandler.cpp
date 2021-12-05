@@ -336,10 +336,11 @@ namespace twMailerServer
             if (!dir && ENOENT == errno)
             {
                 std::cerr << path << " could not be created!" << std::endl;
+                createDirMutex.unlock();
                 return false;
             }
         }
-        createDirMutex.lock();
+        createDirMutex.unlock();
         return true;
     }
 
