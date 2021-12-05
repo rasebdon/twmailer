@@ -122,9 +122,9 @@ namespace twMailerServer
                 perror("close new_socket");
             }
             *socket = -1;
-        }
 
-        std::cout << "Client(" << clientId << ") disconnected!" << std::endl;
+            std::cout << "Client(" << clientId << ") disconnected!" << std::endl;
+        }
     }
 
     int client::getId()

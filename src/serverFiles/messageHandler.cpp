@@ -17,6 +17,7 @@
 
 namespace twMailerServer
 {
+    std::mutex messageHandler::m;
     std::string messageHandler::storagePath;
     blacklist *messageHandler::myBlacklist = nullptr;
 
@@ -31,6 +32,8 @@ namespace twMailerServer
 
     std::string messageHandler::handleMessage(std::string msg, client &c)
     {
+        std::cout << msg << std::endl;
+
         // Convert string to stream
         std::istringstream stream(msg);
 
@@ -174,13 +177,14 @@ namespace twMailerServer
         stream >> line;
         size_t index = atol(line.c_str());
 
-        if (mails.size() <= index)
+        if (index >= mails.size())
         {
             return "ERR\n";
         }
 
+        std::string path = mails.at(index).getPath();
         // Delete mail file
-        if (remove(mails.at(index).getPath().c_str()) == 0)
+        if (remove(path.c_str()) == 0)
         {
             return "OK\n";
         }
@@ -221,9 +225,13 @@ namespace twMailerServer
         DIR *dir;
         struct dirent *ent;
 
+        m.lock();
+
         // Try to open the directory
         if ((dir = opendir(path.c_str())) == NULL)
         {
+            std::cout << "Cannot open directiory " << path << std::endl;
+            m.unlock();
             return false;
         }
 
@@ -243,9 +251,11 @@ namespace twMailerServer
                 (std::istreambuf_iterator<char>()));
 
             std::istringstream fileStream(content);
-            mails.push_back(mail(fileStream, path + fileName));
+            mails.push_back(mail(fileStream, username, path + fileName));
         }
         closedir(dir);
+
+        m.unlock();
 
         return true;
     }
@@ -266,7 +276,7 @@ namespace twMailerServer
         answer += "" + std::to_string(mails.size()) + "\n";
         for (size_t i = 0; i < mails.size(); i++)
         {
-            answer += mails.at(i).getSubject() + "\n";
+            answer += std::string("[" + std::to_string(i) + "] " + mails.at(i).getSubject() + "\n");
         }
 
         return answer;
@@ -277,7 +287,7 @@ namespace twMailerServer
         try
         {
             // Create mail from stream and return the save state
-            mail mail(stream, c.username);
+            mail mail(stream, c.username, "");
             bool success = messageHandler::saveMail(mail);
             return success ? "OK\n" : "ERR\n";
         }

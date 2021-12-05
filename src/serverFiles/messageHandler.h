@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -12,6 +13,7 @@ namespace twMailerServer
     class messageHandler
     {
     private:
+        static std::mutex m;
         static std::string storagePath;
 
         // Storage handling

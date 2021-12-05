@@ -10,7 +10,6 @@ namespace twMailerServer
     private:
         int clientId;
         int* socket;
-
     public:
         bool loggedIn;
         bool abortRequested;

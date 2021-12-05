@@ -165,7 +165,7 @@ namespace twMailerClient
                     size_t number = 0;
                     std::cin >> number;
 
-                    msg = COMMAND_DEL + std::string("\n") + username + "\n" + std::to_string(number);
+                    msg = COMMAND_DEL + std::string("\n") + username + std::to_string(number);
                 }
             }
 

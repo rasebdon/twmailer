@@ -9,7 +9,7 @@
 #include "server.h"
 #include "messageHandler.h"
 
-namespace twMailerServer 
+namespace twMailerServer
 {
 
     server::server(int port, std::string mailSpoolDirectoryname)
@@ -23,7 +23,8 @@ namespace twMailerServer
         abort();
     }
 
-    void server::start() {
+    void server::start()
+    {
         std::cout << "Starting server on port: " << this->port << std::endl;
 
         // Init message handler
@@ -33,23 +34,23 @@ namespace twMailerServer
         create_socket = -1;
         if ((create_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-        throw std::runtime_error("Socket error");
+            throw std::runtime_error("Socket error");
         }
 
         int reuseValue = 1;
         // Set socket options
         // Reuse socket address
         if (setsockopt(create_socket, SOL_SOCKET, SO_REUSEADDR, &reuseValue,
-                    sizeof(reuseValue)) == -1) 
+                       sizeof(reuseValue)) == -1)
         {
-        throw std::runtime_error("Set socket options - reuseAddr");
+            throw std::runtime_error("Set socket options - reuseAddr");
         }
 
         // Reuse port
         if (setsockopt(create_socket, SOL_SOCKET, SO_REUSEPORT, &reuseValue,
-                    sizeof(reuseValue)) == -1) 
+                       sizeof(reuseValue)) == -1)
         {
-        throw std::runtime_error("Set socket options - reuseAddr");
+            throw std::runtime_error("Set socket options - reuseAddr");
         }
 
         // Init address
@@ -60,7 +61,8 @@ namespace twMailerServer
         address.sin_port = htons(port);
 
         // Bind socket to port
-        if (bind(create_socket, (struct sockaddr *)&address, sizeof(address)) == -1) {
+        if (bind(create_socket, (struct sockaddr *)&address, sizeof(address)) == -1)
+        {
             throw std::runtime_error("Bind error");
         }
 
@@ -70,7 +72,8 @@ namespace twMailerServer
         startListening();
     }
 
-    void server::startListening() {
+    void server::startListening()
+    {
         std::cout << "Start listening..." << std::endl;
 
         if (listen(create_socket, 5) == -1)
@@ -92,8 +95,8 @@ namespace twMailerServer
             // Accept new connections
             addrlen = sizeof(struct sockaddr_in);
             if ((new_socket = accept(create_socket,
-                                    (struct sockaddr *)&cliaddress,
-                                    &addrlen)) == -1)
+                                     (struct sockaddr *)&cliaddress,
+                                     &addrlen)) == -1)
             {
                 if (abortRequested)
                 {
@@ -106,18 +109,17 @@ namespace twMailerServer
                 break;
             }
 
-        
             // Create new client
-            std::cout << "Client connected from " << inet_ntoa(cliaddress.sin_addr)
-                    << ":" << ntohs(cliaddress.sin_port) << "..." << std::endl;
-            
+            std::cout << "Client (" << currentClientId++ << ") connected from " << inet_ntoa(cliaddress.sin_addr)
+                      << ":" << ntohs(cliaddress.sin_port) << std::endl;
+
             std::string clientIP = inet_ntoa(cliaddress.sin_addr);
 
-            int* socket = new int(new_socket);
+            int *socket = new int(new_socket);
 
-            client* c = new client(currentClientId++, clientIP, socket);
+            client *c = new client(currentClientId, clientIP, socket);
             clients.push_back(c);
-            
+
             // Start client as new thread
             std::thread(&client::recieve, *c).detach();
 
@@ -125,7 +127,8 @@ namespace twMailerServer
         }
     }
 
-    void server::abort() {
+    void server::abort()
+    {
         // Frees the descriptor
         if (create_socket != -1)
         {
@@ -143,10 +146,10 @@ namespace twMailerServer
         // Delete clients
         for (size_t i = 0; i < clients.size(); i++)
         {
-            delete(clients.at(i));
+            delete (clients.at(i));
         }
 
         // Delete blacklist object
-        delete(messageHandler::myBlacklist);
+        delete (messageHandler::myBlacklist);
     }
 }
