@@ -13,7 +13,9 @@ namespace twMailerServer
     class messageHandler
     {
     private:
-        static std::mutex m;
+        static std::mutex getMailMutex;
+        static std::mutex createTxtMutex;
+        static std::mutex createDirMutex;
         static std::string storagePath;
 
         // Storage handling

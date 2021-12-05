@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
-#include <ldap.h> 
+#include <ldap.h>
 #include "../shared/protocol.h"
 #include "messageHandler.h"
 #include "mail.h"
@@ -17,7 +17,9 @@
 
 namespace twMailerServer
 {
-    std::mutex messageHandler::m;
+    std::mutex messageHandler::getMailMutex;
+    std::mutex messageHandler::createDirMutex;
+    std::mutex messageHandler::createTxtMutex;
     std::string messageHandler::storagePath;
     blacklist *messageHandler::myBlacklist = nullptr;
 
@@ -81,7 +83,7 @@ namespace twMailerServer
     std::string messageHandler::login(std::istringstream &stream, client &c)
     {
         // Check if user is blacklisted
-        if(!myBlacklist->canLogin(c.ipAddress))
+        if (!myBlacklist->canLogin(c.ipAddress))
         {
             std::cout << "Client(" << c.getId() << ") - " << c.ipAddress << " tried to login but is blacklisted!" << std::endl;
             return "ERR\n";
@@ -107,9 +109,9 @@ namespace twMailerServer
 
         // Set version options
         rc = ldap_set_option(
-        ldapHandle,
-        LDAP_OPT_PROTOCOL_VERSION, // OPTION
-        &ldapVersion);             // IN-Value
+            ldapHandle,
+            LDAP_OPT_PROTOCOL_VERSION, // OPTION
+            &ldapVersion);             // IN-Value
         if (rc != LDAP_OPT_SUCCESS)
         {
             std::cerr << "ldap_set_option(PROTOCOL_VERSION): " << ldap_err2string(rc) << std::endl;
@@ -119,9 +121,9 @@ namespace twMailerServer
 
         // Start TLS Secure
         rc = ldap_start_tls_s(
-        ldapHandle,
-        NULL,
-        NULL);
+            ldapHandle,
+            NULL,
+            NULL);
         if (rc != LDAP_SUCCESS)
         {
             std::cerr << "ldap_start_tls_s(): " << ldap_err2string(rc) << std::endl;
@@ -225,13 +227,13 @@ namespace twMailerServer
         DIR *dir;
         struct dirent *ent;
 
-        m.lock();
+        getMailMutex.lock();
 
         // Try to open the directory
         if ((dir = opendir(path.c_str())) == NULL)
         {
             std::cout << "Cannot open directiory " << path << std::endl;
-            m.unlock();
+            getMailMutex.unlock();
             return false;
         }
 
@@ -255,7 +257,7 @@ namespace twMailerServer
         }
         closedir(dir);
 
-        m.unlock();
+        getMailMutex.unlock();
 
         return true;
     }
@@ -326,6 +328,7 @@ namespace twMailerServer
 
     bool messageHandler::tryMakeDir(std::string path)
     {
+        createDirMutex.lock();
         if (mkdir((path).c_str(), 0777) != 0)
         {
             // Check if the folder exists
@@ -336,6 +339,7 @@ namespace twMailerServer
                 return false;
             }
         }
+        createDirMutex.lock();
         return true;
     }
 
@@ -365,14 +369,16 @@ namespace twMailerServer
             return false;
         if (!messageHandler::tryMakeDir(receiverInboxFolderPath))
             return false;
-
+        
+        static int mailIndex = 0;
+        createTxtMutex.lock();
         // Generate file name
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
         std::ostringstream oss;
-        oss << std::put_time(&tm, "%Y%m%d%m%H%M%S") << ".txt";
+        oss << std::put_time(&tm, "%Y%m%d%m%H%M%S") << "_" << mailIndex++ << ".txt";
         auto filename = oss.str();
-
+        createTxtMutex.unlock();
         // File content creation
         std::string fileContent(mail.toString());
 

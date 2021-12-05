@@ -108,7 +108,6 @@ namespace twMailerServer
                 }
                 break;
             }
-
             // Create new client
             std::cout << "Client (" << currentClientId++ << ") connected from " << inet_ntoa(cliaddress.sin_addr)
                       << ":" << ntohs(cliaddress.sin_port) << std::endl;
