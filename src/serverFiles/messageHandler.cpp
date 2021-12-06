@@ -34,8 +34,6 @@ namespace twMailerServer
 
     std::string messageHandler::handleMessage(std::string msg, client &c)
     {
-        std::cout << msg << std::endl;
-
         // Convert string to stream
         std::istringstream stream(msg);
 
